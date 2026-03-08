@@ -38,7 +38,8 @@ export default function ProcessingView({ keyword, onComplete, onError }: Process
             .then((r) => r.json())
             .then((data) => {
                 if (data.error) {
-                    onError(data.error);
+                    const detail = data.detail ? ` (${data.detail})` : '';
+                    onError(data.error + detail);
                 } else if (data.passage) {
                     setApiResult(data.passage);
                 }
