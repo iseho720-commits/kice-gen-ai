@@ -2,8 +2,8 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Unlock, ArrowLeft, Loader2, BookOpen } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Lock, Unlock, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 import ProcessingView from '@/components/ProcessingView';
@@ -11,6 +11,9 @@ import PdfResultView from '@/components/PdfResultView';
 import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase/client';
 import { DbPassage, DbProfile } from '@/types/database';
+
+// Create supabase client at module scope to avoid stale closures
+const supabase = createClient();
 
 type Step = 'IDLE' | 'PROCESSING' | 'PREVIEW' | 'COMPLETE';
 
@@ -51,8 +54,6 @@ function GeneratePageInner() {
     const [profile, setProfile] = useState<DbProfile | null>(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
 
-    const supabase = createClient();
-
     useEffect(() => {
         // IDLE -> PROCESSING if keyword exists
         if (keyword && step === 'IDLE') {
@@ -68,7 +69,7 @@ function GeneratePageInner() {
             if (user) {
                 setUserId(user.id);
                 const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-                if (data) setProfile(data);
+                if (data) setProfile(data as DbProfile);
             }
         };
         fetchUser();
@@ -180,7 +181,7 @@ function GeneratePageInner() {
         );
     }
 
-    if (step === 'IDLE') return null; // Wait for redirect or transition to PROCESSING
+    if (step === 'IDLE') return null;
 
     if (step === 'PROCESSING') {
         return <ProcessingView keyword={keyword} onComplete={handleProcessingComplete} onError={handleError} />;
@@ -219,7 +220,6 @@ function GeneratePageInner() {
                     <div className="glass rounded-2xl p-6 md:p-10 space-y-6 relative">
                         {paragraphs.map((para, idx) => {
                             const isBlurred = idx > 0;
-
                             return (
                                 <motion.div
                                     key={idx}
@@ -240,7 +240,6 @@ function GeneratePageInner() {
                                 </motion.div>
                             );
                         })}
-
                         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-slate-card via-slate-card/80 to-transparent rounded-b-2xl pointer-events-none" />
                     </div>
 
@@ -252,9 +251,7 @@ function GeneratePageInner() {
                         <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center mx-auto">
                             <Lock size={24} className="text-accent-blue" />
                         </div>
-                        <h2 className="text-xl font-black text-white">
-                            2-5문단이 잠겨 있습니다
-                        </h2>
+                        <h2 className="text-xl font-black text-white">2-5문단이 잠겨 있습니다</h2>
                         <p className="text-slate-400 text-sm">
                             {price === 0
                                 ? '무료 크레딧으로 열 수 있습니다'

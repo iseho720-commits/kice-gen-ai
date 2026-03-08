@@ -98,6 +98,14 @@ function parseJsonFromRaw(raw: string) {
 
 export async function POST(req: NextRequest) {
     try {
+        // 0. Environment Check
+        if (!process.env.GEMINI_API_KEY) {
+            return NextResponse.json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다. Vercel 환경변수를 확인해주세요.' }, { status: 500 });
+        }
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+            return NextResponse.json({ error: 'Supabase 설정이 누락되었습니다.' }, { status: 500 });
+        }
+
         const { keyword } = await req.json();
         if (!keyword || typeof keyword !== 'string' || !keyword.trim()) {
             return NextResponse.json({ error: '키워드가 없습니다.' }, { status: 400 });
@@ -215,8 +223,11 @@ export async function POST(req: NextRequest) {
         await supabase.from('profiles').update({ credits: profile.credits - 1 }).eq('id', user.id);
 
         return NextResponse.json({ passage: newPassage, cache_hit: false });
-    } catch (err) {
+    } catch (err: any) {
         console.error('[/api/generate/pipeline]', err);
-        return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
+        return NextResponse.json({
+            error: '서버 오류가 발생했습니다.',
+            detail: err?.message || String(err)
+        }, { status: 500 });
     }
 }

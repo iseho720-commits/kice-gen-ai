@@ -29,7 +29,12 @@ export default function AuthModal() {
             }
 
             if (mode === 'signup') {
-                const { error } = await supabase.auth.signUp({ email, password });
+                const redirectTo = `${window.location.origin}/auth/callback`;
+                const { error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: { emailRedirectTo: redirectTo },
+                });
                 if (error) throw error;
                 setMessage('이메일을 확인해주세요! 인증 후 로그인이 가능합니다.');
             } else {
